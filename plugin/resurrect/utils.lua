@@ -71,11 +71,17 @@ end
 -- Create the folder if it does not exist
 ---@param path string
 function utils.ensure_folder_exists(path)
-	if utils.is_windows then
-		os.execute('mkdir /p "' .. path:gsub("/", "\\" .. '"'))
-	else
-		os.execute('mkdir -p "' .. path .. '"')
-	end
+        if utils.is_windows then
+                local win_path = path:gsub("/", "\\"):gsub("\\+$", "")
+                -- 已存在就直接略過，不呼叫 shell（os.rename 到自己是常見的存在性檢查技巧）
+                if os.rename(win_path, win_path) then
+                        return
+                end
+                -- 不存在才建立；run_child_process 不經過 os.execute
+                require("wezterm").run_child_process({ "cmd.exe", "/c", "mkdir", win_path })
+        else
+                os.execute('mkdir -p "' .. path .. '"')
+        end
 end
 
 -- deep copy
